@@ -71,7 +71,6 @@ static void activate(GtkApplication *app, gpointer user_data) {
     hints.min_width = 200;
     hints.min_height = 200;
     gtk_window_set_geometry_hints(GTK_WINDOW(window), window, &hints,
-                                  GDK_HINT_MIN_SIZE |
                                   GDK_HINT_MIN_SIZE);
 
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
