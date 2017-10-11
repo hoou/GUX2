@@ -30,7 +30,7 @@ static void handleButtonClicked(GtkWidget *button, gpointer data) {
     g_object_set_data(G_OBJECT(button), "clicked", GINT_TO_POINTER(1));
 }
 
-static void createButtonGrid(GtkWidget *window) {
+static void createPlayGrid(GtkWidget *window) {
     GtkWidget *grid, *button;
 
     // Create grid layout
@@ -76,7 +76,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
     // Create grid filled with buttons
-    createButtonGrid(window);
+    createPlayGrid(window);
 
     // Show window
     gtk_widget_show_all(window);
