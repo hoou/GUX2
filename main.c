@@ -78,12 +78,6 @@ void restartGame() {
 }
 
 void markWinningCells(struct CellStruct **cells) {
-    g_print("winning cells:\n");
-    g_print("cell r: %d, c: %d\n", cells[0]->row, cells[0]->col);
-    g_print("cell r: %d, c: %d\n", cells[1]->row, cells[1]->col);
-    g_print("cell r: %d, c: %d\n", cells[2]->row, cells[2]->col);
-
-
     for (int i = 0; i < 3; i++) {
         cells[i]->color.red = 0;
         cells[i]->color.green = 0;
