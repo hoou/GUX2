@@ -11,7 +11,7 @@ link_directories(${GTK3_LIBRARY_DIRS})
 
 add_definitions(${GTK3_CFLAGS_OTHER})
 
-set(SOURCE_FILES main.c)
+set(SOURCE_FILES main.c Game.h Player.h Cell.h Game.c)
 add_executable(GUX2 ${SOURCE_FILES})
 
 target_link_libraries(GUX2 ${GTK3_LIBRARIES})

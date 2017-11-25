@@ -1,81 +1,9 @@
 #include <gtk/gtk.h>
-
-enum GameStateEnum {
-    Running,
-    Finished
-} typedef GameState;
-
-enum CellValueEnum {
-    Empty,
-    X,
-    O
-} typedef CellValue;
-
-enum PlayerEnum {
-    FirstPlayer,
-    SecondPlayer
-} typedef Player;
-
-struct CellStruct {
-    CellValue value;
-    int row;
-    int col;
-    GtkWidget *widget;
-    GdkRGBA color;
-} typedef Cell;
-
-struct GameStruct {
-    Cell *grid[3][3];
-    Player currentPlayer;
-    int moveCount;
-    GameState state;
-} typedef Game;
+#include "Game.h"
 
 // Global variables
 Game *game;
 GtkApplication *app;
-
-Game *createGame() {
-    Game *game = g_malloc(sizeof(Game));
-    game->currentPlayer = FirstPlayer;
-    for (int row = 0; row < 3; row++) {
-        for (int col = 0; col < 3; col++) {
-            Cell *cell = g_malloc(sizeof(Cell));
-            cell->value = Empty;
-            cell->row = row;
-            cell->col = col;
-            cell->color.red = 0;
-            cell->color.green = 0;
-            cell->color.blue = 0;
-            cell->color.alpha = 1;
-            game->grid[row][col] = cell;
-        }
-    }
-
-    game->moveCount = 0;
-    game->state = Running;
-
-    return game;
-}
-
-void destroyGame() {
-    for (int row = 0; row < 3; row++) {
-        for (int col = 0; col < 3; col++) {
-            g_free(game->grid[row][col]);
-        }
-    }
-    g_free(game);
-}
-
-void endGame() {
-    game->state = Finished;
-    g_print("Game is over\n");
-}
-
-void restartGame() {
-    destroyGame();
-    createGame();
-}
 
 void markWinningCells(struct CellStruct **cells) {
     for (int i = 0; i < 3; i++) {
@@ -84,74 +12,6 @@ void markWinningCells(struct CellStruct **cells) {
         cells[i]->color.blue = 1;
         gtk_widget_queue_draw(cells[i]->widget);
     }
-}
-
-gboolean
-doWeHaveWinner(struct CellStruct *cell, struct CellStruct *winning_cells[3]) {
-    int n = 3;
-
-    // Check row
-    for (int i = 0; i < n; i++) {
-        Cell *actual_cell = game->grid[cell->row][i];
-        winning_cells[i] = actual_cell;
-        if (actual_cell->value != cell->value)
-            break;
-        if (i == n - 1) {
-            return TRUE;
-        }
-    }
-
-    // Check column
-    for (int i = 0; i < n; i++) {
-        Cell *actual_cell = game->grid[i][cell->col];
-        winning_cells[i] = actual_cell;
-        if (actual_cell->value != cell->value)
-            break;
-        if (i == n - 1) {
-            return TRUE;
-        }
-    }
-
-    // Check diagonal
-    if (cell->row == cell->col) {
-        for (int i = 0; i < n; i++) {
-            Cell *actualCell = game->grid[i][i];
-            winning_cells[i] = actualCell;
-            if (actualCell->value != cell->value)
-                break;
-            if (i == n - 1) {
-                return TRUE;
-            }
-        }
-    }
-
-    // Check opposite diagonal
-    if (cell->row + cell->col == n - 1) {
-        for (int i = 0; i < n; i++) {
-            Cell *actual_cell = game->grid[i][(n - 1) - i];
-            winning_cells[i] = actual_cell;
-            if (actual_cell->value != cell->value)
-                break;
-            if (i == n - 1) {
-                return TRUE;
-            }
-        }
-    }
-
-    return FALSE;
-}
-
-void makeGameMove(struct CellStruct *cell) {
-    if (game->currentPlayer == FirstPlayer) {
-        cell->value = X;
-    } else {
-        cell->value = O;
-    }
-
-    game->moveCount++;
-
-    game->currentPlayer =
-            game->currentPlayer == FirstPlayer ? SecondPlayer : FirstPlayer;
 }
 
 void drawX(GtkWidget *widget, cairo_t *cr, GdkRGBA *color) {
@@ -210,7 +70,7 @@ void drawO(GtkWidget *widget, cairo_t *cr, GdkRGBA *color) {
     cairo_stroke(cr);
 }
 
-gboolean on_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
+gboolean onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     Cell *cell;
 
     cell = data;
@@ -224,7 +84,7 @@ gboolean on_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
-gboolean on_click(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+gboolean onClick(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     Cell *cell;
     Cell *winning_cells[3];
 
@@ -240,12 +100,12 @@ gboolean on_click(GtkWidget *widget, GdkEventButton *event, gpointer data) {
         return FALSE;
     }
 
-    makeGameMove(cell);
+    makeGameMove(game, cell);
 
     // Redraw cell
     gtk_widget_queue_draw(widget);
 
-    if (doWeHaveWinner(cell, winning_cells)) {
+    if (doWeHaveWinner(game, cell, winning_cells)) {
         g_print("Winner winner chicken dinner!\n");
         if (game->currentPlayer == SecondPlayer) {
             g_print("Congratulations Player 1!\n");
@@ -253,27 +113,27 @@ gboolean on_click(GtkWidget *widget, GdkEventButton *event, gpointer data) {
             g_print("Congratulations Player 2!\n");
         }
         markWinningCells(winning_cells);
-        endGame();
+        endGame(game);
     } else if (game->moveCount == 9) {
         g_print("Tie!\n");
-        endGame();
+        endGame(game);
     }
 
     return FALSE;
 }
 
-void new_game_dialog_repsonse_callback(GtkDialog *dialog, gint response_id,
-                                       gpointer user_data) {
+void newGameDialogRepsonseCallback(GtkDialog *dialog, gint response_id,
+                                   gpointer user_data) {
     if (response_id == GTK_RESPONSE_YES) {
-        restartGame();
+        restartGame(game);
         g_print("Game restarted\n");
     }
 
     gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
-void exit_dialog_repsonse_callback(GtkDialog *dialog, gint response_id,
-                                   gpointer user_data) {
+void exitDialogRepsonseCallback(GtkDialog *dialog, gint response_id,
+                                gpointer user_data) {
     if (response_id == GTK_RESPONSE_YES) {
         g_application_quit(G_APPLICATION(app));
     }
@@ -281,7 +141,7 @@ void exit_dialog_repsonse_callback(GtkDialog *dialog, gint response_id,
     gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
-static void new_game_callback(GtkWidget *widget) {
+static void newGameCallback(GtkWidget *widget) {
     GtkWidget *dialog = NULL;
     GtkWidget *window = NULL;
 
@@ -295,12 +155,12 @@ static void new_game_callback(GtkWidget *widget) {
                                     "Do you really want to start the new game?");
 
     g_signal_connect(dialog, "response",
-                     G_CALLBACK(new_game_dialog_repsonse_callback),
+                     G_CALLBACK(newGameDialogRepsonseCallback),
                      NULL);
     gtk_widget_show_all(dialog);
 }
 
-static void exit_callback(GtkWidget *widget) {
+static void exitCallback(GtkWidget *widget) {
     GtkWidget *dialog = NULL;
     GtkWidget *window = NULL;
 
@@ -314,7 +174,7 @@ static void exit_callback(GtkWidget *widget) {
                                     "Do you really want to exit the game?");
 
     g_signal_connect(dialog, "response",
-                     G_CALLBACK(exit_dialog_repsonse_callback),
+                     G_CALLBACK(exitDialogRepsonseCallback),
                      NULL);
     gtk_widget_show_all(dialog);
 }
@@ -337,11 +197,11 @@ GtkWidget *createPlayGrid() {
             game->grid[row][col]->widget = cell;
 
             // Setup handlers
-            g_signal_connect(G_OBJECT(cell), "draw", G_CALLBACK(on_draw),
+            g_signal_connect(G_OBJECT(cell), "draw", G_CALLBACK(onDraw),
                              game->grid[row][col]);
 
             g_signal_connect(G_OBJECT(cell), "button-release-event",
-                             G_CALLBACK(on_click), game->grid[row][col]);
+                             G_CALLBACK(onClick), game->grid[row][col]);
 
             gtk_widget_add_events(cell, GDK_BUTTON_RELEASE_MASK |
                                         GDK_BUTTON_PRESS_MASK);
@@ -368,9 +228,9 @@ GtkWidget *createMenuBar() {
 
     // Add handlers
     g_signal_connect(G_OBJECT(new_game_item_menu), "activate",
-                     G_CALLBACK(new_game_callback), NULL);
+                     G_CALLBACK(newGameCallback), NULL);
     g_signal_connect(G_OBJECT(exit_item_menu), "activate",
-                     G_CALLBACK(exit_callback), NULL);
+                     G_CALLBACK(exitCallback), NULL);
 
     box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_box_pack_start(GTK_BOX(box), menu_bar, FALSE, FALSE, 0);
@@ -430,7 +290,7 @@ int main(int argc, char **argv) {
     // Free memory
     g_object_unref(app);
 
-    destroyGame();
+    destroyGame(game);
 
     // Return status code
     return status;
